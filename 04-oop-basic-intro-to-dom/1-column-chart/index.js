@@ -43,17 +43,14 @@ export default class ColumnChart {
     const element = document.createElement('div');
     element.innerHTML = this.getTemplate();
 
-    if (!!this.data && this.data.length > 0) {
-      element.querySelector('.column-chart__chart')
-        .insertAdjacentHTML('beforeend', getColumnChartTemplate(this.data, this.chartHeight));
+    if (hasChartAnyData(this.data)) {
+      addColumnsToElement(element, this.data, this.chartHeight);
     } else {
-      element.querySelector('.column-chart')
-        .classList.add('column-chart_loading');
+      addChartLoadingClassToElement(element);
     }
 
     if (this.link) {
-      element.querySelector('.column-chart__title')
-        .insertAdjacentHTML('beforeend', getLinkTemplate(this.link));
+      addLinkToElement(element, this.link);
     }
 
     this.element = element.firstElementChild;
@@ -72,6 +69,23 @@ export default class ColumnChart {
     this.remove();
   }
 }
+
+const addColumnsToElement = (element, data, chartHeight) => {
+  element.querySelector('.column-chart__chart')
+    .insertAdjacentHTML('beforeend', getColumnChartTemplate(data, chartHeight));
+};
+
+const addLinkToElement = (element, link) => {
+  element.querySelector('.column-chart__title')
+    .insertAdjacentHTML('beforeend', getLinkTemplate(link));
+};
+
+const addChartLoadingClassToElement = (element) => {
+  element.querySelector('.column-chart')
+    .classList.add('column-chart_loading');
+};
+
+const hasChartAnyData = (data) => !!data && data.length > 0;
 
 const getColumnProps = (data, chartHeight) => {
   const maxValue = Math.max(...data);
