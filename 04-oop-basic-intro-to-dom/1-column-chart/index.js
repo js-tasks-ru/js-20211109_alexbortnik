@@ -8,8 +8,7 @@ export default class ColumnChart {
       value = 0,
       link = '',
       formatHeading = (v) => v
-    } = {} // never did it before... it looks weird and ugly. there is a strange unit test which calls constructor without any param
-    ) {
+    } = {}) {
     this.chartHeight = CHART_HEIGHT;
     this.data = data;
     this.label = label ;
@@ -43,14 +42,14 @@ export default class ColumnChart {
     const element = document.createElement('div');
     element.innerHTML = this.getTemplate();
 
-    if (hasChartAnyData(this.data)) {
-      addColumnsToElement(element, this.data, this.chartHeight);
+    if (this.hasChartAnyData(this.data)) {
+      this.addColumnsToElement(element, this.data, this.chartHeight);
     } else {
-      addChartLoadingClassToElement(element);
+      this.addChartLoadingClassToElement(element);
     }
 
     if (this.link) {
-      addLinkToElement(element, this.link);
+      this.addLinkToElement(element, this.link);
     }
 
     this.element = element.firstElementChild;
@@ -68,42 +67,45 @@ export default class ColumnChart {
   destroy() {
     this.remove();
   }
+
+  addColumnsToElement(element) {
+    element.querySelector('.column-chart__chart')
+      .insertAdjacentHTML('beforeend', this.getColumnChartTemplate(this.data, this.chartHeight));
+  }
+
+  addLinkToElement(element) {
+    element.querySelector('.column-chart__title')
+      .insertAdjacentHTML('beforeend', this.getLinkTemplate(this.link));
+  }
+
+  addChartLoadingClassToElement(element) {
+    element.querySelector('.column-chart')
+      .classList.add('column-chart_loading');
+  }
+
+  hasChartAnyData() {
+    return !!this.data && this.data.length > 0;
+  }
+
+  getColumnProps() {
+    const maxValue = Math.max(...this.data);
+    const scale = this.chartHeight / maxValue;
+
+    return this.data.map(item => {
+      return {
+        percent: (item / maxValue * 100).toFixed(0) + '%',
+        value: String(Math.floor(item * scale))
+      };
+    });
+  }
+
+  getLinkTemplate() {
+    return `<a class="column-chart__link" href="${this.link}">View all</a>`;
+  }
+
+  getColumnChartTemplate() {
+    const dataColumnProps = this.getColumnProps(this.data, this.chartHeight);
+    return dataColumnProps.reduce((template, prop) =>
+      template + `<div style="--value: ${prop.value}" data-tooltip="${prop.percent}"></div>`, '');
+  }
 }
-
-const addColumnsToElement = (element, data, chartHeight) => {
-  element.querySelector('.column-chart__chart')
-    .insertAdjacentHTML('beforeend', getColumnChartTemplate(data, chartHeight));
-};
-
-const addLinkToElement = (element, link) => {
-  element.querySelector('.column-chart__title')
-    .insertAdjacentHTML('beforeend', getLinkTemplate(link));
-};
-
-const addChartLoadingClassToElement = (element) => {
-  element.querySelector('.column-chart')
-    .classList.add('column-chart_loading');
-};
-
-const hasChartAnyData = (data) => !!data && data.length > 0;
-
-const getColumnProps = (data, chartHeight) => {
-  const maxValue = Math.max(...data);
-  const scale = chartHeight / maxValue;
-
-  return data.map(item => {
-    return {
-      percent: (item / maxValue * 100).toFixed(0) + '%',
-      value: String(Math.floor(item * scale))
-    };
-  });
-};
-
-const getLinkTemplate = (link) =>
-  `<a class="column-chart__link" href="${link}">View all</a>`;
-
-const getColumnChartTemplate = (data, chartHeight) => {
-  const dataColumnProps = getColumnProps(data, chartHeight);
-  return dataColumnProps.reduce((template, prop) =>
-    template + `<div style="--value: ${prop.value}" data-tooltip="${prop.percent}"></div>`, '');
-};
