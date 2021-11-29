@@ -4,18 +4,10 @@ class Tooltip {
 
   onPointerMove = (event) => this.moveTo(event.clientX, event.clientY);
   onPointerOut = () => this.remove();
-
   onPointerOver = (event) => {
     const tooltipMessage = event.target.dataset.tooltip;
     this.render(tooltipMessage);
-
     this.moveTo(event.clientX, event.clientY);
-    this.tooltipArea.addEventListener('pointermove', this.onPointerMove);
-    this.tooltipArea.addEventListener('pointerout', this.onPointerOut);
-  }
-
-  get tooltipArea() {
-    return document.querySelector('[data-tooltip]');
   }
 
   constructor() {
@@ -26,7 +18,11 @@ class Tooltip {
   }
 
   initialize() {
-    this.tooltipArea.addEventListener('pointerover', this.onPointerOver);
+    this.addEventListeners();
+  }
+
+  getTooltipArea() {
+    return document.querySelector('[data-tooltip]');
   }
 
   render(content = '') {
@@ -42,20 +38,28 @@ class Tooltip {
     this.element.style.top = Math.ceil(y) + 'px';
   }
 
+  addEventListeners() {
+    const tooltipArea = this.getTooltipArea();
+    tooltipArea.addEventListener('pointerover', this.onPointerOver);
+    tooltipArea.addEventListener('pointermove', this.onPointerMove);
+    tooltipArea.addEventListener('pointerout', this.onPointerOut);
+  }
+
   removeEventListeners() {
-    this.tooltipArea.removeEventListener('pointermove', this.onPointerMove);
-    this.tooltipArea.removeEventListener('pointerover', this.onPointerOver);
-    this.tooltipArea.removeEventListener('pointerout', this.onPointerOut);
+    const tooltipArea = this.getTooltipArea();
+    tooltipArea.removeEventListener('pointermove', this.onPointerMove);
+    tooltipArea.removeEventListener('pointerover', this.onPointerOver);
+    tooltipArea.removeEventListener('pointerout', this.onPointerOut);
   }
 
   remove() {
     if (this.element) {
-      this.removeEventListeners();
       this.element.remove();
     }
   }
 
   destroy() {
+    this.removeEventListeners();
     this.remove();
     this.element = null;
   }
