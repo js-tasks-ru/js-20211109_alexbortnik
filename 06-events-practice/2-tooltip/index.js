@@ -1,5 +1,6 @@
 class Tooltip {
   static instance;
+  static tooltipShiftPx = 5;
   element;
 
   onPointerMove = (event) => this.moveTo(event.clientX, event.clientY);
@@ -34,8 +35,8 @@ class Tooltip {
   }
 
   moveTo(x, y) {
-    this.element.style.left = Math.ceil(x) + 'px';
-    this.element.style.top = Math.ceil(y) + 'px';
+    this.element.style.left = (Math.ceil(x) + Tooltip.tooltipShiftPx) + 'px';
+    this.element.style.top = (Math.ceil(y) + Tooltip.tooltipShiftPx) + 'px';
   }
 
   addEventListeners() {
