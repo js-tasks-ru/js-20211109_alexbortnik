@@ -93,12 +93,11 @@ export default class ColumnChart {
   }
 
   async update(from, to) {
-    this.data = await fetchJson(`${this.url}?` +
-      new URLSearchParams({
-        from: from.toISOString(),
-        to: to.toISOString()
-      })
-    );
+    const url = new URL(this.url);
+    url.searchParams.set('from', from.toISOString());
+    url.searchParams.set('to', to.toISOString());
+
+    this.data = await fetchJson(url);
 
     this.subElements.header.innerHTML = this.getHeaderBody();
     this.subElements.body.innerHTML = this.getColumnBody();
