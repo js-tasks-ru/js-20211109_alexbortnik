@@ -146,26 +146,19 @@ export default class SortableTable {
     return result;
   }
 
-  headerCellClicked = (event) => {
-    this.sortBy = event.currentTarget.dataset.id;
+  headerCellClicked = async (event) => {
+    const headerCell = event.target.closest('[data-sortable="true"]');
+    this.sortBy = headerCell.dataset.id;
     this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
-    this.sort(this.sortBy, this.sortOrder);
+    await this.sort(this.sortBy, this.sortOrder);
   }
 
   addEventListeners() {
-    const sortableColumns = this.element.querySelectorAll(
-      '.sortable-table__cell[data-sortable="true"]');
-
-    sortableColumns.forEach(c =>
-      c.addEventListener('pointerdown', this.headerCellClicked));
+    this.subElements.header.addEventListener('pointerdown', this.headerCellClicked);
   }
 
   removeEventListeners() {
-    const sortableColumns = this.element.querySelectorAll(
-      '.sortable-table__cell[data-sortable="true"]');
-
-    sortableColumns.forEach(c =>
-      c.removeEventListener('pointerdown', this.headerCellClicked));
+    this.subElements.header.removeEventListener('pointerdown', this.headerCellClicked);
   }
 
   remove() {
