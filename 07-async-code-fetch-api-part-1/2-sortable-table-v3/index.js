@@ -9,6 +9,13 @@ export default class SortableTable {
   sortOrder;
   data = [];
 
+  onHeaderCellClick = async (event) => {
+    const sortableCell = event.target.closest('[data-sortable="true"]');
+    this.sortBy = sortableCell.dataset.id;
+    this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+    await this.sort(this.sortBy, this.sortOrder);
+  }
+
   constructor(headersConfig, {
       sorted = {},
       isSortLocally = false,
@@ -30,6 +37,7 @@ export default class SortableTable {
     element.innerHTML = this.getTemplate();
     this.element = element.firstElementChild;
     this.subElements = this.getSubElements(element);
+
     await this.sort(this.sortBy, this.sortOrder);
     this.addEventListeners();
   }
@@ -78,15 +86,30 @@ export default class SortableTable {
 
   async sort(field, order) {
     if (this.isSortLocally) {
-      await this.sortOnClient(field, order);
+      this.sortOnClient(field, order);
     } else {
       await this.sortOnServer(field, order);
     }
   }
 
-  async sortOnClient(field, order) {
+  sortOnClient(field, order) {
     const fieldConfig = this.headerConfig.find(x => x.id === field);
-    const sortedItems = this.sortItems(this.data, field, fieldConfig.sortType, order);
+
+    const compares = {
+      string: (a, b) => a.localeCompare(b, ['ru', 'en'], {caseFirst: 'upper'}),
+      number: (a, b) => a - b
+    };
+    const compare = compares[fieldConfig.type];
+
+    const directions = {
+      asc: 1,
+      desc: -1
+    };
+    const direction = directions[order];
+
+    const sortedItems = [...this.data].sort((a, b) =>
+      direction * compare(a[field], b[field]));
+
     this.update(sortedItems);
     this.drawHeaderSortArrow(field, order);
   }
@@ -103,6 +126,10 @@ export default class SortableTable {
     this.drawHeaderSortArrow(field, order);
   }
 
+  update(data) {
+    this.subElements.body.innerHTML = this.getTableBody(data);
+  }
+
   drawHeaderSortArrow(field, order) {
     const headerCellWithArrow = this.element.querySelector(`.sortable-table__cell[data-order]`);
     if (headerCellWithArrow) {
@@ -111,27 +138,6 @@ export default class SortableTable {
 
     const currentHeaderCell = this.element.querySelector(`.sortable-table__cell[data-id="${field}"]`);
     currentHeaderCell.setAttribute('data-order', order);
-  }
-
-  update(data) {
-    this.subElements.body.innerHTML = this.getTableBody(data);
-  }
-
-  sortItems(arr, field, type = 'string', order = 'asc') {
-    const compares = {
-      string: (a, b) => a.localeCompare(b, ['ru', 'en'], {caseFirst: 'upper'}),
-      number: (a, b) => a - b
-    };
-    const compare = compares[type];
-
-    const directions = {
-      asc: 1,
-      desc: -1
-    };
-    const direction = directions[order];
-
-    return [...arr].sort((a, b) =>
-      direction * compare(a[field], b[field]));
   }
 
   getSubElements(element) {
@@ -146,19 +152,12 @@ export default class SortableTable {
     return result;
   }
 
-  headerCellClicked = async (event) => {
-    const headerCell = event.target.closest('[data-sortable="true"]');
-    this.sortBy = headerCell.dataset.id;
-    this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
-    await this.sort(this.sortBy, this.sortOrder);
-  }
-
   addEventListeners() {
-    this.subElements.header.addEventListener('pointerdown', this.headerCellClicked);
+    this.subElements.header.addEventListener('pointerdown', this.onHeaderCellClick);
   }
 
   removeEventListeners() {
-    this.subElements.header.removeEventListener('pointerdown', this.headerCellClicked);
+    this.subElements.header.removeEventListener('pointerdown', this.onHeaderCellClick);
   }
 
   remove() {
