@@ -3,7 +3,7 @@
 Используя компонент ["ColumnChart"](taskbook:oop-basic-intro-to-dom/column-chart) из предыдущего модуля 
 ["Основы ООП. Введение в DOM (Document Object Model)"](taskbook:oop-basic-intro-to-dom) необходимо реализовать загрузку данных с сервера. 
 
-!["ColumnChart"](column-chart.gif)
+!["ColumnChart"](./public/column-chart.gif)
 
 **Запросы на сервер:**
 Все параметры API можно получить на странице демо-версии проекта [https://course-js.javascript.ru/](https://course-js.javascript.ru/)
