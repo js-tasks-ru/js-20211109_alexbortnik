@@ -21,7 +21,7 @@ export default class SortableTable {
 
   constructor(headersConfig, {
       sorted = {},
-      isSortLocally = true,
+      isSortLocally = false,
       url = '',
     } = {}
   ) {
