@@ -9,16 +9,19 @@ export default class SortableTable {
   sortOrder;
   data = [];
 
+  page = 1;
+  pageSize = 30;
+
   onHeaderCellClick = async (event) => {
     const sortableCell = event.target.closest('[data-sortable="true"]');
     this.sortBy = sortableCell.dataset.id;
     this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
-    await this.sort(this.sortBy, this.sortOrder);
+    await this.sort();
   }
 
   constructor(headersConfig, {
       sorted = {},
-      isSortLocally = false,
+      isSortLocally = true,
       url = '',
     } = {}
   ) {
@@ -38,7 +41,7 @@ export default class SortableTable {
     this.element = element.firstElementChild;
     this.subElements = this.getSubElements(element);
 
-    await this.sort(this.sortBy, this.sortOrder);
+    await this.loadInitialData();
     this.addEventListeners();
   }
 
@@ -84,11 +87,11 @@ export default class SortableTable {
     }).join('');
   }
 
-  async sort(field, order) {
+  async sort() {
     if (this.isSortLocally) {
-      this.sortOnClient(field, order);
+      this.sortOnClient(this.sortBy, this.sortOrder);
     } else {
-      await this.sortOnServer(field, order);
+      await this.sortOnServer(this.sortBy, this.sortOrder);
     }
   }
 
@@ -99,7 +102,7 @@ export default class SortableTable {
       string: (a, b) => a.localeCompare(b, ['ru', 'en'], {caseFirst: 'upper'}),
       number: (a, b) => a - b
     };
-    const compare = compares[fieldConfig.type];
+    const compare = compares[fieldConfig.sortType];
 
     const directions = {
       asc: 1,
@@ -115,18 +118,28 @@ export default class SortableTable {
   }
 
   async sortOnServer(field, order) {
+    const { start, end } = this.getStartEndOfPage();
+    await this.load(field, order, start, end);
+  }
+
+  async loadInitialData() {
+    await this.load(this.sortBy, this.sortOrder, 0, this.pageSize);
+  }
+
+  async load(field, order, pageStart, pageEnd) {
     const url = new URL(this.url);
     url.searchParams.set('_sort', field);
     url.searchParams.set('_order', order);
-    url.searchParams.set('_start', '0');
-    url.searchParams.set('_end', '30');
+    url.searchParams.set('_start', pageStart.toString());
+    url.searchParams.set('_end', pageEnd.toString());
 
     const data = await fetchJson(url);
     this.update(data);
-    this.drawHeaderSortArrow(field, order);
+    this.drawHeaderSortArrow(this.sortBy, this.sortOrder);
   }
 
   update(data) {
+    this.data = data;
     this.subElements.body.innerHTML = this.getTableBody(data);
   }
 
@@ -152,12 +165,44 @@ export default class SortableTable {
     return result;
   }
 
+  fillData = async () => {
+    const {
+      scrollTop,
+      scrollHeight,
+      clientHeight
+    } = document.documentElement;
+
+    if (scrollTop + clientHeight === scrollHeight) {
+      this.page++; // take next portion. the first is already render
+      const url = new URL(this.url);
+      url.searchParams.set('_sort', this.sortBy);
+      url.searchParams.set('_order', this.sortOrder);
+
+      const { start, end } = this.getStartEndOfPage();
+      url.searchParams.set('_start', start.toString());
+      url.searchParams.set('_end', end.toString());
+
+      const newPortion = await fetchJson(url);
+      this.data = [...this.data, ...newPortion];
+      this.update(this.data);
+      this.subElements.body.innerHTML = this.getTableBody(this.data);
+    }
+  }
+
+  getStartEndOfPage() {
+    const start = (this.page - 1) * this.pageSize;
+    const end = start + this.pageSize;
+    return { start, end };
+  }
+
   addEventListeners() {
     this.subElements.header.addEventListener('pointerdown', this.onHeaderCellClick);
+    window.addEventListener('scroll', this.fillData);
   }
 
   removeEventListeners() {
     this.subElements.header.removeEventListener('pointerdown', this.onHeaderCellClick);
+    window.removeEventListener('scroll', this.fillData);
   }
 
   remove() {
