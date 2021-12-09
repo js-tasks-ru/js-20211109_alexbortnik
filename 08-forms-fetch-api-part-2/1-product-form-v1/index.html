@@ -25,11 +25,11 @@
     await productForm.render();
 
     productForm.element.addEventListener('product-saved', event => {
-      console.error('product-saved', event.detail);
+      console.log('product-saved', event.detail);
     });
 
     productForm.element.addEventListener('product-updated', event => {
-      console.error('product-updated', event.detail);
+      console.log('product-updated', event.detail);
     });
 
     root.append(productForm.element);
