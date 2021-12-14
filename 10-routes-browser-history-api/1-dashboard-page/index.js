@@ -42,21 +42,52 @@ export default class Page {
     element.innerHTML = this.getTemplate();
     this.element = element.firstElementChild;
 
-    const rangePicker = new RangePicker({ from: this.from, to: this.to });
-    rangePicker.element.setAttribute('data-element', 'rangePicker');
-    this.element.querySelector('[data-element="rangePicker"]').replaceWith(rangePicker.element);
+    this.buildRangePicker();
+    this.buildSalesColumnChart();
+    this.buildOrdersColumnChart();
+    this.buildCustomersColumnChart();
+    this.buildBestSellersTable();
 
-    const ordersColumnChart = new ColumnChart({
-      label: 'orders',
-      link: '/sales',
-      url: 'api/dashboard/orders',
+    this.initEventListeners();
+
+    this.subElements = this.getSubElements(this.element);
+    return this.element;
+  }
+
+  buildBestSellersTable() {
+    const url = this.getBestsellersURL();
+    this.bestSellersTable = new SortableTable(header, { url });
+    this.bestSellersTable.element.setAttribute('data-element', 'sortableTable');
+    this.element.querySelector('[data-element="sortableTable"]').replaceWith(this.bestSellersTable.element);
+  }
+
+  buildRangePicker() {
+    this.rangePicker = new RangePicker({ from: this.from, to: this.to });
+    this.rangePicker.element.setAttribute('data-element', 'rangePicker');
+
+    this.element.querySelector('[data-element="rangePicker"]')
+      .replaceWith(this.rangePicker.element);
+  }
+
+  buildCustomersColumnChart() {
+    this.customersColumnChart = new ColumnChart({
+      label: 'customers',
+      url: 'api/dashboard/customers',
       range: {
         from: this.from,
         to: this.to
-      }
+      },
     });
 
-    const salesColumnChart = new ColumnChart({
+    this.customersColumnChart.element.classList.add('dashboard__chart_customers');
+    this.customersColumnChart.element.setAttribute('data-element', 'customersChart');
+
+    this.element.querySelector('[data-element="customersChart"]')
+      .replaceWith(this.customersColumnChart.element);
+  }
+
+  buildSalesColumnChart() {
+    this.salesColumnChart = new ColumnChart({
       label: 'sales',
       url: 'api/dashboard/sales',
       range: {
@@ -66,41 +97,29 @@ export default class Page {
       formatHeading: (data) => `$${data}`
     });
 
-    const customersColumnChart = new ColumnChart({
-      label: 'customers',
-      url: 'api/dashboard/customers',
+    this.salesColumnChart.element.classList.add('dashboard__chart_sales');
+    this.salesColumnChart.element.setAttribute('data-element', 'salesChart');
+
+    this.element.querySelector('[data-element="salesChart"]')
+      .replaceWith(this.salesColumnChart.element);
+  }
+
+  buildOrdersColumnChart() {
+    this.ordersColumnChart = new ColumnChart({
+      label: 'orders',
+      link: '/sales',
+      url: 'api/dashboard/orders',
       range: {
         from: this.from,
         to: this.to
-      },
+      }
     });
 
-    ordersColumnChart.element.classList.add('dashboard__chart_orders');
-    ordersColumnChart.element.setAttribute('data-element', 'ordersChart');
-    this.element.querySelector('[data-element="ordersChart"]').replaceWith(ordersColumnChart.element);
+    this.ordersColumnChart.element.classList.add('dashboard__chart_orders');
+    this.ordersColumnChart.element.setAttribute('data-element', 'ordersChart');
 
-    salesColumnChart.element.classList.add('dashboard__chart_sales');
-    salesColumnChart.element.setAttribute('data-element', 'salesChart');
-    this.element.querySelector('[data-element="salesChart"]').replaceWith(salesColumnChart.element);
-
-    customersColumnChart.element.classList.add('dashboard__chart_customers');
-    customersColumnChart.element.setAttribute('data-element', 'customersChart');
-    this.element.querySelector('[data-element="customersChart"]').replaceWith(customersColumnChart.element);
-
-    const url = this.getBestsellersURL();
-    const table = new SortableTable(header, { url });
-    table.element.setAttribute('data-element', 'sortableTable');
-    this.element.querySelector('[data-element="sortableTable"]').replaceWith(table.element);
-
-    this.bestSellersTable = table;
-    this.ordersColumnChart = ordersColumnChart;
-    this.salesColumnChart = salesColumnChart;
-    this.customersColumnChart = customersColumnChart;
-
-    this.initEventListeners();
-
-    this.subElements = this.getSubElements(this.element);
-    return this.element;
+    this.element.querySelector('[data-element="ordersChart"]')
+      .replaceWith(this.ordersColumnChart.element);
   }
 
   initEventListeners() {
