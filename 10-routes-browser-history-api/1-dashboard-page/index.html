@@ -12,9 +12,6 @@
 <body>
 
 <main class="main">
-  <div class="progress-bar">
-    <div class="progress-bar__line"></div>
-  </div>
   <aside class="sidebar">
     <h2 class="sidebar__title">
       <a href="/">shop admin</a>
@@ -68,5 +65,9 @@
   }
 
   initialize();
+
+  document.querySelector('.sidebar__nav.sidebar__nav_bottom')
+    .addEventListener('click', () =>
+      document.body.classList.toggle('is-collapsed-sidebar'));
 </script>
 </body>
