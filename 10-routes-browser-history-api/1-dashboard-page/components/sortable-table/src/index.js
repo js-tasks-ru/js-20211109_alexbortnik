@@ -22,7 +22,7 @@ export default class SortableTable {
       this.loading = true;
 
       const data = await this.loadData(id, order, this.start, this.end);
-      this.update(data);
+      this.updateOnScroll(data);
 
       this.loading = false;
     }
@@ -120,7 +120,20 @@ export default class SortableTable {
     this.subElements.body.innerHTML = this.getTableRows(data);
   }
 
-  update(data) {
+  async update(from, to) {
+    const url = new URL(this.url);
+    url.searchParams.set('from', from.toISOString());
+    url.searchParams.set('to', to.toISOString());
+    url.searchParams.set('_sort', this.sorted.id);
+    url.searchParams.set('_order', this.sorted.order);
+    url.searchParams.set('_start', this.start.toString());
+    url.searchParams.set('_end', this.end.toString());
+
+    const data = await fetchJson(url);
+    this.renderRows(data);
+  }
+
+  updateOnScroll(data) {
     const rows = document.createElement('div');
 
     this.data = [...this.data, ...data];
