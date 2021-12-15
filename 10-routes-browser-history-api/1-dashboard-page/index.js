@@ -131,7 +131,7 @@ export default class Page {
     this.remove();
 
     for (const component of Object.values(this.components)) {
-      component.remove();
+      component.destroy();
     }
 
     this.element = null;
