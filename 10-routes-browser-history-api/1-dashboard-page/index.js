@@ -6,120 +6,78 @@ import header from './bestsellers-header.js';
 export default class Page {
   element;
   subElements;
-
-  ordersColumnChart;
-  salesColumnChart;
-  customersColumnChart;
-  bestSellersTable;
+  components;
 
   onDateSelect = async (event) => {
-    this.from = event.detail.from;
-    this.to = event.detail.to;
+    const { from, to } = event.detail;
 
-    this.bestSellersTable.url.searchParams.set('from', this.from.toISOString());
-    this.bestSellersTable.url.searchParams.set('to', this.to.toISOString());
-
-    const sortBy = header.find(item => item.sortable).id;
-
-    const [bestSellers] = await Promise.all([
-      this.bestSellersTable.loadData(sortBy, 'asc'),
-      this.ordersColumnChart.update(this.from, this.to),
-      this.salesColumnChart.update(this.from, this.to),
-      this.customersColumnChart.update(this.from, this.to)
+    await Promise.all([
+      this.components.customersChart.update(from, to),
+      this.components.ordersChart.update(from, to),
+      this.components.salesChart.update(from, to),
+      this.components.sortableTable.update(from, to)
     ]);
-
-    this.bestSellersTable.addRows(bestSellers);
-  }
-
-  constructor() {
-    this.from = new Date();
-    this.from.setMonth(this.from.getMonth() - 1);
-    this.to = new Date();
   }
 
   async render() {
     const element = document.createElement('div');
     element.innerHTML = this.getTemplate();
     this.element = element.firstElementChild;
+    this.subElements = this.getSubElements(this.element);
 
-    this.buildRangePicker();
-    this.buildSalesColumnChart();
-    this.buildOrdersColumnChart();
-    this.buildCustomersColumnChart();
-    this.buildBestSellersTable();
-
+    this.buildComponents();
+    this.renderComponents();
     this.initEventListeners();
 
-    this.subElements = this.getSubElements(this.element);
     return this.element;
   }
 
-  buildBestSellersTable() {
-    const url = this.getBestsellersURL();
-    this.bestSellersTable = new SortableTable(header, { url });
-    this.bestSellersTable.element.setAttribute('data-element', 'sortableTable');
-    this.element.querySelector('[data-element="sortableTable"]').replaceWith(this.bestSellersTable.element);
-  }
+  buildComponents() {
+    const now = new Date();
+    const from = new Date(now.setMonth(now.getMonth() - 1));
+    const to = now;
 
-  buildRangePicker() {
-    this.rangePicker = new RangePicker({ from: this.from, to: this.to });
-    this.rangePicker.element.setAttribute('data-element', 'rangePicker');
+    const rangePicker = new RangePicker({ from, to });
 
-    this.element.querySelector('[data-element="rangePicker"]')
-      .replaceWith(this.rangePicker.element);
-  }
-
-  buildCustomersColumnChart() {
-    this.customersColumnChart = new ColumnChart({
+    const customersChart = new ColumnChart({
       label: 'customers',
       url: 'api/dashboard/customers',
-      range: {
-        from: this.from,
-        to: this.to
-      },
+      range: { from, to },
     });
 
-    this.customersColumnChart.element.classList.add('dashboard__chart_customers');
-    this.customersColumnChart.element.setAttribute('data-element', 'customersChart');
-
-    this.element.querySelector('[data-element="customersChart"]')
-      .replaceWith(this.customersColumnChart.element);
-  }
-
-  buildSalesColumnChart() {
-    this.salesColumnChart = new ColumnChart({
+    const salesChart = new ColumnChart({
       label: 'sales',
       url: 'api/dashboard/sales',
-      range: {
-        from: this.from,
-        to: this.to
-      },
+      range: { from, to },
       formatHeading: (data) => `$${data}`
     });
 
-    this.salesColumnChart.element.classList.add('dashboard__chart_sales');
-    this.salesColumnChart.element.setAttribute('data-element', 'salesChart');
-
-    this.element.querySelector('[data-element="salesChart"]')
-      .replaceWith(this.salesColumnChart.element);
-  }
-
-  buildOrdersColumnChart() {
-    this.ordersColumnChart = new ColumnChart({
+    const ordersChart = new ColumnChart({
       label: 'orders',
       link: '/sales',
       url: 'api/dashboard/orders',
-      range: {
-        from: this.from,
-        to: this.to
-      }
+      range: { from, to },
     });
 
-    this.ordersColumnChart.element.classList.add('dashboard__chart_orders');
-    this.ordersColumnChart.element.setAttribute('data-element', 'ordersChart');
+    const sortableTable = new SortableTable(header, {
+      url: `api/dashboard/bestsellers?from=${from.toISOString()}&to=${to.toISOString()}`,
+      isSortLocally: true
+    });
 
-    this.element.querySelector('[data-element="ordersChart"]')
-      .replaceWith(this.ordersColumnChart.element);
+    this.components = {
+      rangePicker,
+      customersChart,
+      salesChart,
+      ordersChart,
+      sortableTable
+    };
+  }
+
+  renderComponents() {
+    Object.keys(this.components).forEach(component => {
+      const parentNode = this.subElements[component];
+      parentNode.append(this.components[component].element);
+    });
   }
 
   initEventListeners() {
@@ -139,19 +97,15 @@ export default class Page {
         </div>
 
         <div class="dashboard__charts">
-          <div data-element="ordersChart"></div>
-          <div data-element="salesChart"></div>
-          <div data-element="customersChart"></div>
+          <div data-element="ordersChart" class="dashboard__chart_orders"></div>
+          <div data-element="salesChart" class="dashboard__chart_sales"></div>
+          <div data-element="customersChart" class="dashboard__chart_customers"></div>
         </div>
 
         <h3 class="block-title">Лидеры продаж</h3>
         <div data-element="sortableTable"></div>
       </div>
     `;
-  }
-
-  getBestsellersURL() {
-    return `api/dashboard/bestsellers?from=${this.from.toISOString()}&to=${this.to.toISOString()}`;
   }
 
   getSubElements(element) {
@@ -175,6 +129,11 @@ export default class Page {
 
   destroy() {
     this.remove();
+
+    for (const component of Object.values(this.components)) {
+      component.remove();
+    }
+
     this.element = null;
     this.subElements = null;
   }
